@@ -74,7 +74,10 @@ $(document).ready(function(){
 		camParent		= new THREE.Object3D();
 		modelParent		= new THREE.Object3D();
 		modelParent.rotation.x = -Math.PI/2;
-		
+
+		// init projector to get mouse click on mesh
+		projector = new THREE.Projector();
+				
 		// Create the scene
 		scene		= new THREE.Scene();
 		scene.fog	= new THREE.Fog(blue, sceneHalf-300, sceneHalf);
@@ -84,13 +87,6 @@ $(document).ready(function(){
 		camParent.addChild(camera);
 		
 		scene.addObject(camParent);
-		
-		//facemat = new THREE.MeshBasicMaterial( { color: white, opacity: 1.0, shading: THREE.FlatShading } );
-		facemat = new THREE.MeshLambertMaterial( { color: white, opacity: 1.0 } );
-		//wiremat = new THREE.MeshBasicMaterial( { color: blue, opacity: 1.0, wireframe: true, wireframeLinewidth: 1.0 } );
-		
-		//Material = [facemat,wiremat]; 
-		Material = [facemat]; 
 		
 		// SET UP LIGHTS
 		d1		= new THREE.DirectionalLight( 0xE0E0E0);
@@ -115,7 +111,10 @@ $(document).ready(function(){
 		$('#container').show();
 		
 		canvas = document.getElementById('canvas');
-		
+
+		canvas.addEventListener( 'mousemove', onDocumentMouseMove, false );
+		canvas.addEventListener( 'mousedown', onDocumentMouseDown2, false );
+
 		window.addEventListener('resize', onWindowResize, false);
 		canvas.addEventListener( 'mousedown', onDocumentMouseDown, false );
 		canvas.addEventListener( 'touchstart', onDocumentTouchStart, false );
@@ -128,36 +127,28 @@ $(document).ready(function(){
 
 
 // Add the 3d model
-function makeRobot(segments){
-
+function makeRobot(segments)
+{
+	var connectors	= (new base('torso')).connectors;
+	
 	Models = new Array();
 
 	bot = botList[Math.round(partRand.getRandomNumber() * (botList.length-1))];
 	
 	// Make the torso!
-	part = makeMesh(bot,'torso');
-	part.doubleSided = false;
-	part.useQuaternion = true;
-	var currentTime = new Date()
-	part.birthTime = currentTime.getTime();
-	
-	modelParent.addChild(part);
-	
-	connectors = part.geometry.connectors;
-	
-	Models['torso'] = part;
-	
+	part	= makePart('torso', connectors);
+
 	// Loop through all the limbs and create a part for each
 	for (var i = 0; i < partList.length; i ++ ){
-		makePart(partList[i], connectors);
+		part = makePart(partList[i], connectors);
 	}
 	
 }
 
 
 // Add a limb for the robot
-function makePart(type, connectors){
-
+function makePart(type, connectors)
+{
 	if (debug) console.log('making a '+type);
 	
 	bot = botList[Math.round(partRand.getRandomNumber() * (botList.length-1))];
@@ -175,15 +166,46 @@ function makePart(type, connectors){
 	
 	Models[type] = part;
 
-}
+	// init collider
+	var mesh	= part;
+	var collider	= THREE.CollisionUtils.MeshColliderWBox(mesh);
+	THREE.Collisions.colliders.push( collider );
+	collidableMeshes.push(mesh);
 
+	mesh._bodyPart	= partList[i];
+	mesh._collider	= collider;	
+
+	return part;
+}
 
 // Make the mesh!
 function makeMesh(bot,type){
-	//if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
-	if(bot == 'andrewn') return new THREE.Mesh( new andrewn(type),  Material);
+	//facemat = new THREE.MeshBasicMaterial( { color: white, opacity: 1.0, shading: THREE.FlatShading } );
+	var facemat = new THREE.MeshLambertMaterial( { color: 0xFFFFFF, opacity: 1.0 } );
+	//wiremat = new THREE.MeshBasicMaterial( { color: blue, opacity: 1.0, wireframe: true, wireframeLinewidth: 1.0 } );
+	
+	//Material = [facemat,wiremat]; 
+	var Material = [facemat]; 
+		
+	if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
+    if(bot == 'andrewn') return new THREE.Mesh( new andrewn(type),  Material);
+	
 	return new THREE.Mesh( new base(type),  Material);
 }
+
+function nextPart(mesh)
+{
+	console.log("nextPart", mesh._bodyPart);
+	//modelParent.removeChild(mesh);
+	scene.removeChild(mesh);
+
+	var colliders	= THREE.Collisions.colliders;
+	var position	= colliders.indexOf(mesh._collider);
+console.log("position", position);
+	colliders.splice( position, 1 );
+	
+}
+
 
 
 // Animate function
@@ -193,10 +215,47 @@ function animate() {
 	if(debug)	stats.update();
 }
 
+var mouse = { x: undefined, y: undefined };
+function onDocumentMouseMove( event ) {
+
+	event.preventDefault();
+	mouse.x =   ( event.clientX / window.innerWidth  ) * 2 - 1;
+	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+};
+
+function onDocumentMouseDown2( event ) {
+	console.log("selectedMesh", selectedMesh)
+	if( !selectedMesh )	return;
+	nextPart(selectedMesh);
+}
 
 // Each render of a frame!
 // We update the models in here
 function render() {
+	
+(function(){
+	// reset all the colors
+	for(var i = 0; i < collidableMeshes.length; i++ ) {
+		collidableMeshes[ i ].materials[ 0 ].color.setHex( 0xFFFFFF );
+	}
+
+
+	var vector	= new THREE.Vector3( mouse.x, mouse.y, 0.5 );
+	projector.unprojectVector( vector, camera );
+	var ray		= new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
+	var collision	= THREE.Collisions.rayCastNearest( ray );
+	if( collision && mouse.x !== undefined ){
+		var mesh	= collision.mesh;
+		//info.innerHTML += "Found @ distance " + c.distance;
+		mesh.materials[ 0 ].color.setHex( 0xbb0000 );
+		//console.log("bbb", mouseState, mesh._bodyPart);
+		selectedMesh	= mesh;
+	} else {
+		selectedMesh	= null;
+	}
+	//console.log("selectedMesh", selectedMesh);
+})();
 
 	var now		= Date.now();
 	timeSpent	= now - oldNow;

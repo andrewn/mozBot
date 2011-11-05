@@ -57,3 +57,7 @@ var botList = [/*'base', 'round', */'andrewn'];
 var partList = ['head', 'arm_l', 'arm_r', 'leg_l', 'leg_r'];
 
 var partRand, frameRand;
+
+var projector;
+var collidableMeshes	= [];
+var selectedMesh;
