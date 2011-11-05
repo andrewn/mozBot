@@ -165,11 +165,9 @@ function makePart(type, connectors){
 	// Make the head
 	part = makeMesh(bot, type);
 	part.doubleSided = false;
-	part.useQuaternion = true;
 	
 	c = connectors[type];
 
-	part.quaternion.set(c.quaternion[0], c.quaternion[1], c.quaternion[2], c.quaternion[3]);
 	part.position.set(c.position[0], c.position[1], c.position[2]);
 	part.update();
 	
