@@ -180,7 +180,8 @@ function makePart(type, connectors){
 
 // Make the mesh!
 function makeMesh(bot,type){
-	if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
+	//if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
+	if(bot == 'andrewn') return new THREE.Mesh( new andrewn(type),  Material);
 	return new THREE.Mesh( new base(type),  Material);
 }
 

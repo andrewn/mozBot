@@ -53,7 +53,7 @@ var grey = 0xCCCCCC;
 var black = 0x000000;
 var orange = 0xFF6600;
 
-var botList = ['base', 'round'];
+var botList = [/*'base', 'round', */'andrewn'];
 var partList = ['head', 'arm_l', 'arm_r', 'leg_l', 'leg_r'];
 
 var partRand, frameRand;
