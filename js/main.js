@@ -127,53 +127,28 @@ $(document).ready(function(){
 
 
 // Add the 3d model
-function makeRobot(segments){
-
+function makeRobot(segments)
+{
+	var connectors	= (new base('torso')).connectors;
+	
 	Models = new Array();
 
 	bot = botList[Math.round(partRand.getRandomNumber() * (botList.length-1))];
 	
 	// Make the torso!
-	part = makeMesh(bot,'torso');
-	part.doubleSided = false;
-	part.useQuaternion = true;
-	var currentTime = new Date()
-	part.birthTime = currentTime.getTime();
+	part	= makePart('torso', connectors);
 
-	// init collider
-	var mesh	= part;
-	var collider	= THREE.CollisionUtils.MeshColliderWBox(mesh);
-	THREE.Collisions.colliders.push( collider );
-	collidableMeshes.push(mesh);
-	mesh._bodyPart	= "torso";
-	mesh._collider	= collider;	
-	
-	modelParent.addChild(part);
-	
-	connectors = part.geometry.connectors;
-	
-	Models['torso'] = part;
-	
 	// Loop through all the limbs and create a part for each
 	for (var i = 0; i < partList.length; i ++ ){
 		part = makePart(partList[i], connectors);
-
-		// init collider
-		var mesh	= part;
-		var collider	= THREE.CollisionUtils.MeshColliderWBox(mesh);
-		THREE.Collisions.colliders.push( collider );
-		collidableMeshes.push(mesh);
-
-		mesh._bodyPart	= partList[i];
-		mesh._collider	= collider;	
 	}
 	
 }
 
 
 // Add a limb for the robot
-function makePart(type, connectors){
-
+function makePart(type, connectors)
+{
 	if (debug) console.log('making a '+type);
 	
 	bot = botList[Math.round(partRand.getRandomNumber() * (botList.length-1))];
@@ -191,7 +166,29 @@ function makePart(type, connectors){
 	
 	Models[type] = part;
 
+	// init collider
+	var mesh	= part;
+	var collider	= THREE.CollisionUtils.MeshColliderWBox(mesh);
+	THREE.Collisions.colliders.push( collider );
+	collidableMeshes.push(mesh);
+
+	mesh._bodyPart	= partList[i];
+	mesh._collider	= collider;	
+
 	return part;
+}
+
+// Make the mesh!
+function makeMesh(bot,type){
+	//facemat = new THREE.MeshBasicMaterial( { color: white, opacity: 1.0, shading: THREE.FlatShading } );
+	var facemat = new THREE.MeshLambertMaterial( { color: 0xFFFFFF, opacity: 1.0 } );
+	//wiremat = new THREE.MeshBasicMaterial( { color: blue, opacity: 1.0, wireframe: true, wireframeLinewidth: 1.0 } );
+	
+	//Material = [facemat,wiremat]; 
+	var Material = [facemat]; 
+		
+	if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
+	return new THREE.Mesh( new base(type),  Material);
 }
 
 function nextPart(mesh)
@@ -207,18 +204,6 @@ console.log("position", position);
 	
 }
 
-// Make the mesh!
-function makeMesh(bot,type){
-	//facemat = new THREE.MeshBasicMaterial( { color: white, opacity: 1.0, shading: THREE.FlatShading } );
-	var facemat = new THREE.MeshLambertMaterial( { color: 0xFFFFFF, opacity: 1.0 } );
-	//wiremat = new THREE.MeshBasicMaterial( { color: blue, opacity: 1.0, wireframe: true, wireframeLinewidth: 1.0 } );
-	
-	//Material = [facemat,wiremat]; 
-	var Material = [facemat]; 
-		
-	if(bot == 'round') return new THREE.Mesh( new round(type),  Material);
-	return new THREE.Mesh( new base(type),  Material);
-}
 
 
 // Animate function
